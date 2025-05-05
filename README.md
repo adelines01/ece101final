@@ -15,3 +15,8 @@ Quick log for what I've done:
 *note: barring maybe the formatting, all the functions and the code itself seem to be working great so far :) i've only tested it with two people myself, so maybe i'll run some tests with more players in a bit to make sure it works?
 
 **note: tested it with 6 and 12 players, all with different names, everything still works this way too!
+
+5/5:
+1) made the pile that players play into, with test functions it adds cards to the top of the pile and then accurately reads whats at the top of the pile. a lot of these functions need to be fixed for the final code, since they're just set up for testing right now, but it works!
+2) next step is probably isValidCard(); and fixing/finalizing all the functions that work with the linked list. everything should be good enough for right now, but i'll bet that while testing in the future something's gonna mess up and we'll have to change something.
+3) came up with isValidCard(); but realized we probably need to add the function that allows users to input which card to play to test it. never code at 4:30 am
