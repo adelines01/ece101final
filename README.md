@@ -2,6 +2,7 @@ Quick log for what I've done:
 
 5/6:
 1) i've made my own gameplay loop after having trouble with the other one. next step is to remove the cards from the players hands until there is a winner.
+2) also scraped up drawCard(); but, again, depends on the main gameplay loop itself for proper testing
 
 *note: my main goal right now is to make it run through one successful loop without worrying about the special cards. so far everything present (seemingly) works
 
