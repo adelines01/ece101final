@@ -1,5 +1,10 @@
 Quick log for what I've done:
 
+5/6:
+1) i've made my own gameplay loop after having trouble with the other one. next step is to remove the cards from the players hands until there is a winner.
+
+*note: my main goal right now is to make it run through one successful loop without worrying about the special cards. so far everything present (seemingly) works
+
 5/5:
 1) made the pile that players play into, with test functions it adds cards to the top of the pile and then accurately reads whats at the top of the pile. a lot of these functions need to be fixed for the final code, since they're just set up for testing right now, but it works!
 2) next step is probably isValidCard(); and fixing/finalizing all the functions that work with the linked list. everything should be good enough for right now, but i'll bet that while testing in the future something's gonna mess up and we'll have to change something.
