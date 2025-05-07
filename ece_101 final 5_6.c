@@ -469,7 +469,7 @@ int isValidCard(played_pile *pile, card candidate) {
         return valid;
     }
     // if the colors or numbers match, or a special card is being placed, then these are valid
-    else if ( (candidate.color == pileTopCard.color) || (candidate.name == pileTopCard.name) || (candidate.color == 'S') ) {
+    else if ( (candidate.color == pileTopCard.color) || (candidate.name == pileTopCard.name) || (candidate.color == 'S' || pileTopCard.color == 'S') ) {
         return valid;
     }
     // any other option/combination
