@@ -5,7 +5,7 @@
 
 #define MAX_CARDS 100
 #define START_DECKSIZE 7 
-#define MAX_PLAYERS 14 
+#define MAX_PLAYERS 8 
 #define MIN_PLAYERS 2
 #define MAX_SHUFFLE 10000
 #define DRAW_PENALTY 4
@@ -34,12 +34,11 @@ void shuffleDeck(card *deck);
 void initializeDeck(card *deck, int deckSize);
 played_pile *createPile();
 
-
 void printNumLabel(int numOfPlayer);
 void printCard(card c);
 void printPlayerHand(player *p);
 
-int isValidCard(played_pile* pile, card candidate);
+int isValidCard(played_pile *pile, card candidate);
 
 // functions for testing the linked lists (probably able to keep them for the final code)
 void addCard(played_pile *pile, char name, char color);
@@ -162,7 +161,7 @@ int main() {
                 card played = players[0].deck[firstCard];
                 addCard(pile, played.name, played.color);
             
-                //Remove the card from the player's hand
+                // Remove the card from the player's hand
                 for (i = firstCard; i < players[0].decksize - 1; i++) {
                     players[0].deck[i] = players[0].deck[i + 1];
                 }
@@ -173,7 +172,6 @@ int main() {
         }
         
         int w = 0;
-        
         while (w == 0) {
             for (j = 0; j < numPlayers; j++) {
                 
@@ -194,6 +192,7 @@ int main() {
                 
                 // runs while the current player doesn't pick a card currently in their hand
                 while (cardChoice > players[j].decksize) {
+                    printf("\n");
                     printf("Invalid choice, %s does not have %d cards.\n", players[j].playerName, cardChoice);
                     printf("%s, enter which card to play from 0 to %d: \n", players[j].playerName, players[j].decksize);
                     scanf("%d", &cardChoice);
@@ -201,8 +200,29 @@ int main() {
                 
                 // FIXME: looped branch to check if all of player's cards are valid; if not, forces them to draw and skips entry
                 
-                // FIXME: here would go the main thing - playing the card, discarding it from the player's hand, moves it to the top of the pile, etc.
+                // main loop
                 card playedCard = players[j].deck[cardChoice];
+                
+                while ( isValidCard(pile, playedCard) != 1) {
+                    card topCard;
+                    
+                    topCard.name = pile->top->name;
+                    topCard.color = pile->top->color;
+                    
+                    printf("\n");
+                    printf("Invalid choice, cannot play ");
+                    printCard(playedCard);
+                    printf(" on ");
+                    printCard(topCard);
+                    printf("\n");
+                    
+                    printf("\n");
+                    printf("%s, enter which card to play from 0 to %d: \n", players[j].playerName, players[j].decksize);
+                    scanf("%d", &cardChoice);
+                    
+                    card playedCard = players[j].deck[cardChoice];
+                }
+                
                 addCard(pile, playedCard.name, playedCard.color);
                 
                 //Remove the card from the player's hand
@@ -436,7 +456,7 @@ void printNumLabel(int numOfPlayer) {
 // Check if a candidate card is valid to play on the top-of-pile card. Return 1 if valid, 0 otherwise.
 // note: changed the parameters from what's on the sheet, this is said to be allowed as long as the function name itself is the same so we should be okay
 // extra note: need to make it so we can actually input which card to add to test it i think. oopsies
-int isValidCard(played_pile* pile, card candidate) {
+int isValidCard(played_pile *pile, card candidate) {
     card pileTopCard;
     int valid = 1;
     int not_valid = 0;
