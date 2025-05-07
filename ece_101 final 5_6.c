@@ -617,12 +617,16 @@ int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *de
     printPlayerHand(currentPlayer);
     
     int cardIndex = -1;
-    int i = 1;
-    while (i = 1) {
+    int w = 1;
+    while (w = 1) {
         printf("Enter card choice from 0 to %d: ", currentPlayer->decksize - 1);
         scanf("%d", &cardIndex);
-        if (cardIndex >= 0 && cardIndex < currentPlayer->decksize) {
-            i = 0;
+        // FIXME: exits the loop if another special card is played
+        if (currentPlayer->deck[cardIndex].color == 'S') {
+            printf("Invalid selection - cannot play a special card on another special card.\n");
+        }
+        else if (cardIndex >= 0 && cardIndex < currentPlayer->decksize) {
+            w = 0;
             break;
         }
         else {
@@ -636,16 +640,27 @@ int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *de
     
     // Check next player's hand for a match
     int matchFound = 0;
+    int foundCard = 0;
+    
     for (int i = 0; i < nextPlayer->decksize; i++) {
         if (nextPlayer->deck[i].color == targetColor && 
             nextPlayer->deck[i].name == targetName) {
             matchFound = 1;
+            int foundCard = i;
+            
             break;
         }
     }
     
     if (matchFound) {
         printf("Card matches, no AND penalty.\n");
+        
+        int k = 0;
+        for (int k = foundCard; k < nextPlayer->decksize - 1; k++) {
+            nextPlayer->deck[k] = nextPlayer->deck[k + 1];
+        }
+        nextPlayer->decksize--;  // can't forget to update the player's deck size
+        
         return 1;
     } else {
         printf("%s has no matching card, applying AND penalty.\n", nextPlayer->playerName);
