@@ -51,7 +51,7 @@ void freePile(played_pile *pile);
 int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *deckSize, played_pile *pile);
 int handleOR(player *currentPlayer, player *nextPlayer, card *gameDeck, int *deckSize, played_pile *pile);
 int handleNOT(int currentPlayerIndex, int playerCount);
-void handleReverse(int *reverseFlag, int *currentPlayerIndex, int playerCount);
+void handleReverse(int *direction, int *currentPlayerIndex, int playerCount);
 int applyPenalty(player *p, card *deck, int *deckSize, int count);
 
 // test functions - - - - - - - - - -
@@ -90,6 +90,7 @@ int main() {
         int turnOrder = 1;
         int *turnOrderPtr = &turnOrder;
         int currentPlayer = 0;
+        int currentPlayerPtr = &currentPlayer;
         card gameDeck[100];  // will hold the deck of cards
         initializeDeck(gameDeck, 100);  // create a fresh deck
         shuffleDeck(gameDeck);  // shuffle the deck
@@ -213,12 +214,7 @@ int main() {
             if (ValidCount == 0) {
                 if ( drawCard(gameDeck, gameDeckSizePtr, &players[currentPlayer]) == 1 ) {
                     printf("%s has no card that matches %c or %c, draw one and skip turn.\n", players[currentPlayer].playerName, pile->top->color, pile->top->name);
-                    if (currentPlayer < (numPlayers - 1) ) {
-                        continue;
-                    }
-                    else {
-                        continue;
-                    }
+                    continue;
                 }
                 else {
                     printf("Error with draw deck.\n");
@@ -269,11 +265,11 @@ int main() {
                     players[j].decksize--;  // can't forget to update the player's deck size
                         
                     if (currentPlayer >= (numPlayers - 2)) {
-                        andValid = handleAND(&players[currentPlayer], &players[0], gameDeck, gameDeckSizePtr, pile);
+                        andValid = handleAND(&players[currentPlayer], &players[(0 + turnOrder + numPlayers) % numPlayers], gameDeck, gameDeckSizePtr, pile);
                         currentPlayer = 0;
                     }
                     else {
-                        andValid = handleAND(&players[currentPlayer], &players[currentPlayer + 1], gameDeck, gameDeckSizePtr, pile);
+                        andValid = handleAND(&players[currentPlayer], &players[(currentPlayer + turnOrder + numPlayers + 1) % numPlayers], gameDeck, gameDeckSizePtr, pile);
                         currentPlayer++;
                     }
                         
@@ -294,11 +290,11 @@ int main() {
                     players[currentPlayer].decksize--;  // can't forget to update the player's deck size
                         
                     if (currentPlayer >= (numPlayers - 2)) {
-                        orValid = handleOR(&players[currentPlayer], &players[0], gameDeck, gameDeckSizePtr, pile);
+                        orValid = handleOR(&players[currentPlayer], &players[(0 + turnOrder + numPlayers) % numPlayers], gameDeck, gameDeckSizePtr, pile);
                         currentPlayer = 0;
                     }
                     else {
-                        orValid = handleOR(&players[currentPlayer], &players[currentPlayer + 1], gameDeck, gameDeckSizePtr, pile);
+                        orValid = handleOR(&players[currentPlayer], &players[(currentPlayer + turnOrder + numPlayers + 1) % numPlayers], gameDeck, gameDeckSizePtr, pile);
                         currentPlayer++;
                     }
                         
@@ -322,20 +318,12 @@ int main() {
                     
                 // FIXME: results in memory error
                 if (playedCard.name == 'R') {
-                    /** for (k = cardChoice; k < players[currentPlayer].decksize - 1; k++) {
+                    for (k = cardChoice; k < players[currentPlayer].decksize - 1; k++) {
                         players[currentPlayer].deck[k] = players[currentPlayer].deck[k + 1];
                     }
                     players[currentPlayer].decksize--;  // can't forget to update the player's deck size
                         
-                    handleReverse(turnOrderPtr, jPtr, numPlayers);
-                        
-                    *turnOrderPtr *= -1;
-                        
-                    if (numPlayers == MIN_PLAYERS) {
-                        currentPlayer = ( (currentPlayer + turnOrder + numPlayers) % numPlayers );
-                    } **/
-                    printf("Teehee\n");
-                        
+                    handleReverse(turnOrderPtr, currentPlayerPtr, numPlayers);
                 }
                     
                 continue;
@@ -345,7 +333,7 @@ int main() {
                 printf("\n");
                 printf("Invalid choice, cannot play ");
                 printCard(playedCard);
-                printf(" on ");
+                printf(" on ");https://www.onlinegdb.com/edit/XcYxz2Zy3#tab-stdin
                 printCard(topCard); 
                 printf("\n");
                     
@@ -390,12 +378,14 @@ int main() {
                 break;
             }
             
-            if (currentPlayer >= (numPlayers - 1)) {
+            currentPlayer = (currentPlayer + turnOrder + numPlayers) % numPlayers;
+            
+            /** if (currentPlayer >= (numPlayers - 1)) {
                 currentPlayer = 0;
             }
             else {
                 currentPlayer++;
-            }
+            } **/
         }
         
          // frees the memory of the pile
@@ -810,7 +800,7 @@ int applyPenalty(player *p, card *deck, int *deckSize, int count) {
     card *temp = realloc(p->deck, (p->decksize + count) * sizeof(card));
     if (!temp) {
         printf("Error reallocating memory for the penalty.\n");
-        return 0;
+        return -1;
     }
     p->deck = temp;
     
@@ -830,7 +820,7 @@ int handleNOT(int currentPlayerIndex, int playerCount) {
 
     // if it is just 2 players - the skip card player gets another turn
     if (playerCount == 2) {
-        return (currentPlayerIndex - 2);
+        return (currentPlayerIndex + playerCount - 1) % playerCount;
     }
     
     printf("Next Player's turn skipped.\n");
@@ -839,38 +829,6 @@ int handleNOT(int currentPlayerIndex, int playerCount) {
 }
 
 // Handle effect of Reverse card (reverse the turn order or in a two-player game, let current player go again
-// FIXME: reverses order for one turn but then it goes back to normal
-void handleReverse(int *reverseFlag, int *currentPlayerIndex, int playerCount) {
-
-    // game with 2 players, no index change needed
-    if (playerCount == 2) {
-        return;
-    }
-
-    if (*reverseFlag == NORMAL_ORDER ) {
-        *reverseFlag *= -1;  // reverse playing order 
-    }
-    else if (*reverseFlag == REVERSE_ORDER) {
-        *reverseFlag *= -1;  // switch to normal playing order
-    }
-    
-    // now move to the next player in the new playing order
-    // 2 1 0 0 1 2 or 2 1 0 2 2 0 1
-    if (*reverseFlag == NORMAL_ORDER ) {
-        if (*currentPlayerIndex == (playerCount - 1)){  // come back to first player
-            *currentPlayerIndex = 0;  
-        }
-        else {
-            *currentPlayerIndex = *currentPlayerIndex + 1;
-        }
-    }
-    // 0 1 2 0 0 2 1
-    else if (*reverseFlag == REVERSE_ORDER) {
-        if (*currentPlayerIndex == 0){
-            *currentPlayerIndex = playerCount - 1; // go to last player
-        }
-        else {
-            *currentPlayerIndex = *currentPlayerIndex - 1;
-        }
-    }
+void handleReverse(int *direction, int *currentPlayerIndex, int playerCount) {
+    *direction *= -1;
 }
