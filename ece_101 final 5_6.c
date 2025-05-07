@@ -74,17 +74,16 @@ void freePile(played_pile *pile);
 int main() {
     srand(time(0)); // get a random seed based on the current time so we get different results each run
 
-    int i, j, k, w, numPlayers, cardChoice;
-    int gameIndex = 0;
-    card gameDeck[MAX_CARDS];  // will hold the deck of cards
-    
-    initializeDeck(gameDeck, MAX_CARDS);  // create a fresh deck
-    shuffleDeck(gameDeck);  // shuffle the deck
+    int i, j, k, numPlayers, cardChoice;
     char playAgain = 'y';   // initialize with y so we play at least once
-    int firstCard;    // Store player one's first card index
     
     // Keep asking if the user wants to play again until they say 'no'
-    while (playAgain != 'n' && playAgain != 'N'){
+    while (playAgain != 'n' && playAgain != 'N') {
+        int gameIndex = 0;
+        card gameDeck[MAX_CARDS];  // will hold the deck of cards
+        initializeDeck(gameDeck, MAX_CARDS);  // create a fresh deck
+        shuffleDeck(gameDeck);  // shuffle the deck
+        int firstCard;    // Store player one's first card index
         
         // Get the number of players
         printf("Enter number of players: \n");
@@ -102,6 +101,7 @@ int main() {
         while (numPlayers < MIN_PLAYERS || numPlayers > MAX_PLAYERS) {
             printf("\n");
             printf("Invalid! Please enter a number of players between %d and %d\n", MIN_PLAYERS, MAX_PLAYERS);
+            printf("Enter number of players: \n");
             scanf("%d", &numPlayers);
             getchar();  // Make sure the next input isn't skipped
             printf("\n");
@@ -143,40 +143,44 @@ int main() {
         
         // creates the pile for players to put cards on
         played_pile *pile = createPile();
-
-        while (w == 0) {
-            for (j = 0; j < numPlayers; j++) {
-                
-                int firstCardCheck = 0;   // will check if player one has played their first card
+        int firstCardCheck = 0;   // will check if player one has played their first card
         
-                // get the first player to put down a valid card
-                while (firstCardCheck == 0) {
-                    printf("%s, enter which card to play from 0 to 6: \n", players[0].playerName);
-                    scanf("%d", &firstCard);
-                    getchar();
+        // get the first player to put down a valid card
+        while (firstCardCheck == 0) {
+            printf("%s, enter which card to play from 0 to 6: \n", players[0].playerName);
+            scanf("%d", &firstCard);
+            getchar();
                     
-                    if (firstCard < 0 || firstCard >= players[0].decksize){
-                        printf("Invalid choice, %s does not have %d cards\n", players[0].playerName, firstCard + 1);
-                    }
-                    else if (players[0].deck[firstCard].name =='A' || players[0].deck[firstCard].name =='O' || players[0].deck[firstCard].name =='N' || players[0].deck[firstCard].name =='R') {
-                       printf("Invalid choice, first pile card cannot be a special card\n");
-                    }
-                    else {
-                        j++;
-                        firstCardCheck = 1;  // card looks good
-                    }
-            
-                }
-                
+            if (firstCard < 0 || firstCard >= players[0].decksize){
+                printf("Invalid choice, %s does not have %d cards\n", players[0].playerName, firstCard + 1);
+            }
+            else if (players[0].deck[firstCard].name =='A' || players[0].deck[firstCard].name =='O' || players[0].deck[firstCard].name =='N' || players[0].deck[firstCard].name =='R') {
+                printf("Invalid choice, first pile card cannot be a special card\n");
+            }
+            else {
                 // put the first card on the pile
                 card played = players[0].deck[firstCard];
                 addCard(pile, played.name, played.color);
-        
+            
                 //Remove the card from the player's hand
                 for (i = firstCard; i < players[0].decksize - 1; i++) {
                     players[0].deck[i] = players[0].deck[i + 1];
                 }
                 players[0].decksize--;  // can't forget to update the player's deck size
+                    
+                firstCardCheck = 1;  // card looks good
+            }
+        }
+        
+        int w = 0;
+        
+        while (w == 0) {
+            for (j = 0; j < numPlayers; j++) {
+                
+                if (firstCardCheck == 1) {
+                    j++;
+                    firstCardCheck = 2;
+                }
                 
                 // prints out each player's hand and the top card of the pile each round
                 for (k = 0; k < numPlayers; k++) {
@@ -185,7 +189,7 @@ int main() {
                 printTopCard(pile);
                 
                 printf("\n");
-                printf("%s, enter which card to play from 0 to %d: ", players[j].playerName, players[j].decksize);
+                printf("%s, enter which card to play from 0 to %d: ", players[j].playerName, players[j].decksize - 1);
                 scanf("%d", &cardChoice);
                 
                 // runs while the current player doesn't pick a card currently in their hand
