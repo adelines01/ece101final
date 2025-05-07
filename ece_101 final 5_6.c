@@ -357,9 +357,7 @@ int main() {
                     playedCard = players[currentPlayer].deck[cardChoice];
                     
                     if ( playedCard.color == 'S' ) {
-                        printf("\n");
                         printf("Invalid choice, cannot play two special cards on each other.\n");
-                        printf("\n");
                             
                         printf("\n");
                         printf("%s, enter which card to play from 0 to %d: \n", players[currentPlayer].playerName, (players[currentPlayer].decksize - 1));
