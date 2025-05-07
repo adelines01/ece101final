@@ -356,6 +356,19 @@ int main() {
                     // Continue game with the player's card
                     playedCard = players[currentPlayer].deck[cardChoice];
                     
+                    if ( playedCard.color == 'S' ) {
+                        printf("\n");
+                        printf("Invalid choice, cannot play two special cards on each other.\n");
+                        printf("\n");
+                            
+                        printf("\n");
+                        printf("%s, enter which card to play from 0 to %d: \n", players[currentPlayer].playerName, (players[currentPlayer].decksize - 1));
+                        scanf("%d", &newCardChoice);
+                        getchar();
+        
+                        playedCard = players[currentPlayer].deck[newCardChoice];
+                    }
+                    
                     while ( isValidCard(pile, playedCard) == 0 ) {
                         printf("\n");
                         printf("Invalid choice, cannot play ");
@@ -369,7 +382,7 @@ int main() {
                         scanf("%d", &newCardChoice);
                         getchar();
         
-                        playedCard = players[currentPlayer].deck[cardChoice];
+                        playedCard = players[currentPlayer].deck[newCardChoice];
                     }
                     
                     
