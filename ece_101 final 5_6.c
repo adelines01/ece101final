@@ -274,7 +274,7 @@ int main() {
                         currentPlayer = (currentPlayer + 2) % numPlayers;
                     }
                     else {
-                        currentPlayer = (currentPlayer - 2) % numPlayers;
+                        currentPlayer = (currentPlayer - 2 + numPlayers) % numPlayers;
                     }
                     
                     if (andValid == 0) {
@@ -301,7 +301,7 @@ int main() {
                         currentPlayer = (currentPlayer + 2) % numPlayers;
                     }
                     else {
-                        currentPlayer = (currentPlayer - 2) % numPlayers;
+                        currentPlayer = (currentPlayer - 2 + numPlayers) % numPlayers;
                     }
                     
                     if (orValid == 0) {
@@ -376,13 +376,10 @@ int main() {
                     addCard(pile, playedCard.name, playedCard.color);
                     printTopCard(pile);
                 
-                    // Remove the card from the player's hand
-                    if (playedCard.color != 'S') {
-                        for (k = cardChoice; k < players[currentPlayer].decksize - 1; k++) {
-                            players[currentPlayer].deck[k] = players[currentPlayer].deck[k + 1];
-                        }
-                        players[currentPlayer].decksize--;  // can't forget to update the player's deck size
+                    for (k = cardChoice; k < players[currentPlayer].decksize - 1; k++) {
+                        players[currentPlayer].deck[k] = players[currentPlayer].deck[k + 1];
                     }
+                    players[currentPlayer].decksize--;  // can't forget to update the player's deck size
                     
                     // branch if the current player has 0 cards - winner!
                     if ( (players[currentPlayer].decksize - 1) < 0) {
