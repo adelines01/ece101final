@@ -73,7 +73,7 @@ void freePile(played_pile *pile);
 int main() {
     srand(time(0)); // get a random seed based on the current time so we get different results each run
 
-    int i, j, k, numPlayers, cardChoice;
+    int i, j, k, numPlayers, cardChoice, newCardChoice;
     int ValidCount = 0;
     char playAgain = 'y';   // initialize with y so we play at least once
     
@@ -203,14 +203,18 @@ int main() {
                 }
                 
                 // if the user has no cards that match, forces them to draw and skips entry
-                // FIXME: only runs once and doesn't seem to loop again?
-                // FIXME: okay seems to always run once.
-                // FIXME: okay sometimes doesnt run.
-                // FIXME: i think the problem is if two people in a row don't have a valid card it just skips one
                 if (ValidCount == 0) {
                     if ( drawCard(gameDeck, gameDeckSizePtr, &players[j]) == 1 ) {
                         printf("%s has no card that matches %c or %c, draw one and skip turn.\n", players[j].playerName, pile->top->color, pile->top->name);
-                        j++;
+                        if (j < (numPlayers - 1) ) {
+                            continue;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
+                    else {
+                        printf("Error with draw deck.\n");
                     }
                 }
                 
@@ -231,7 +235,6 @@ int main() {
                 // main loop
                 card playedCard = players[j].deck[cardChoice];
                 
-                // FIXME: keeps submitting the first card entered
                 while ( isValidCard(pile, playedCard) == 0 ) {
                     card topCard;
                     
@@ -247,9 +250,11 @@ int main() {
                     
                     printf("\n");
                     printf("%s, enter which card to play from 0 to %d: \n", players[j].playerName, players[j].decksize);
-                    scanf("%d", &cardChoice);
-                    
-                    playedCard = players[j].deck[cardChoice];
+                    scanf("%d", &newCardChoice);
+                    getchar();
+                    printf("\n");
+
+                    playedCard = players[j].deck[newCardChoice];
                 }
                 
                 addCard(pile, playedCard.name, playedCard.color);
@@ -261,7 +266,7 @@ int main() {
                 players[j].decksize--;  // can't forget to update the player's deck size
                 
                 // branch if the current player has 0 cards - winner!
-                if (players[j].decksize < 0) {
+                if ( (players[j].decksize - 1) < 0) {
                     printf("%s wins!\n", players[j].playerName);
                     w = 1;
                     break; 
