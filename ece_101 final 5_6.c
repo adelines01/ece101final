@@ -849,6 +849,15 @@ int handleOR(player *currentPlayer, player *nextPlayer, card *gameDeck, int *dec
     char targetColor = currentPlayer->deck[cardIndex].color;
     char targetName = currentPlayer->deck[cardIndex].name;
     
+    card targetCard = currentPlayer->deck[cardIndex];
+    
+    addCard(pile, targetName, targetColor);
+    
+    for (int k = cardIndex; k < currentPlayer->decksize - 1; k++) {
+        currentPlayer->deck[k] = currentPlayer->deck[k + 1];
+    }
+    currentPlayer->decksize--;
+    
     // Check next player's hand for a match
     int matchFound = 0;
     int foundCard = -1;
