@@ -253,7 +253,8 @@ int main() {
                 printf("\n");
                 playedCard = players[currentPlayer].deck[cardChoice];
             }
-                
+            
+            // FIXME: "and" and "or" functions act wonky since taking out the "for" loop, sometimes skip/don't skip when the opposite is wanted
             // runs if a special card is played
             if (playedCard.color == 'S') {
                 if (playedCard.name == 'A') {
