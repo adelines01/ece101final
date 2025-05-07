@@ -74,6 +74,7 @@ int main() {
     srand(time(0)); // get a random seed based on the current time so we get different results each run
 
     int i, j, k, numPlayers, cardChoice;
+    int notValidCount = 0;
     char playAgain = 'y';   // initialize with y so we play at least once
     
     // Keep asking if the user wants to play again until they say 'no'
@@ -186,6 +187,22 @@ int main() {
                 }
                 printTopCard(pile);
                 
+                // looped branch to check if all of player's cards are valid
+                for (i = 0; i < players[j].decksize; i++) {
+                    card userCard = players[j].deck[i];
+                    
+                    if ( isValidCard(pile, userCard) != 1 ) {
+                        notValidCount++;
+                    }
+                }
+                
+                // if the user has no cards that match, forces them to draw and skips entry
+                // FIXME: draw function goes here
+                if (notValidCount > players[j].decksize) {
+                    printf("%s has no card that matches %c or %c, draw one and skip turn.\n", players[j].playerName, pile->top->color, pile->top->name);
+                    j++;
+                }
+                
                 printf("\n");
                 printf("%s, enter which card to play from 0 to %d: ", players[j].playerName, players[j].decksize - 1);
                 scanf("%d", &cardChoice);
@@ -198,12 +215,10 @@ int main() {
                     scanf("%d", &cardChoice);
                 }
                 
-                // FIXME: looped branch to check if all of player's cards are valid; if not, forces them to draw and skips entry
-                
                 // main loop
                 card playedCard = players[j].deck[cardChoice];
                 
-                while ( isValidCard(pile, playedCard) != 1) {
+                while ( isValidCard(pile, playedCard) != 1 ) {
                     card topCard;
                     
                     topCard.name = pile->top->name;
@@ -259,17 +274,6 @@ int main() {
                 j = 0;
             }
         }
-    
-        // !! - - - placeholder: where the main game (loop?) should probably go - - - !!
-        /*while (){
-            mmmm
-        
-        
-        // adds and prints the card at the top of the pile
-        addCard(pile, '5', 'R'); // Red 5
-        printTopCard(pile); // should print "Top of card pile is: Red 5"
-        
-        }*/
         
         // frees the memory of the pile
         freePile(pile);
@@ -469,7 +473,7 @@ int isValidCard(played_pile *pile, card candidate) {
         return valid;
     }
     // if the colors or numbers match, or a special card is being placed, then these are valid
-    else if ( (candidate.color == pileTopCard.color) || (candidate.name == pileTopCard.name) || (candidate.color == 'S' || pileTopCard.color == 'S') ) {
+    else if ( (candidate.color == pileTopCard.color) || (candidate.name == pileTopCard.name) || (candidate.color == 'S') || (pileTopCard.color == 'S') ) {
         return valid;
     }
     // any other option/combination
