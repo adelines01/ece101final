@@ -909,7 +909,8 @@ int handleNOT(int currentPlayerIndex, int playerCount, int* playerOrder) {
 
     // if it is just 2 players - the skip card player gets another turn
     if (playerCount == 2) {
-        return (currentPlayerIndex + playerCount - 1) % playerCount;
+        currentPlayerIndex = (currentPlayerIndex + playerCount - 1) % playerCount;
+        return currentPlayerIndex;
     }
     printf("Next player's turn skipped.\n");
     
