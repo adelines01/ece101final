@@ -8,11 +8,12 @@
 #define MAX_PLAYERS 14 
 #define MIN_PLAYERS 2
 #define MAX_SHUFFLE 10000
+#define DRAW_PENALTY 4
 
-typedef struct card_s {
+typedef struct card_t {
     char name; // ’0’-‘9’ for number cards, ‘A’ for AND, ‘O’ for OR, ‘N’ for NOT, and ‘R’ for Reverse.
     char color; // ’R’ for red, ‘Y’ for yellow, ‘G’ for green, ‘B’ for blue, and ‘S’ for special cards
-    struct card_s *listp;
+    struct card_t *listp;
 } card;
 
 // Each player has a name, deck, and the number of cards in their hands. (made deck a pointer to cards because the player might draw or lose cards)
@@ -22,28 +23,32 @@ typedef struct player_t {
     int decksize; // how many cards the player currently holds
 } player;
 
-// structure for the linked list (pile the players place cards into)
+// TESTING: structure for the linked list (pile the players place cards into)
 typedef struct played_pile_s {
     card *top;
     int total;
 } played_pile;
 
-void CreateDeck(card *deck, int deckSize);
+void CreateDeck(card deck[], int deckSize);
 void shuffleDeck(card *deck);
 void initializeDeck(card *deck, int deckSize);
 played_pile *createPile();
 
-void printOrdinal(int numOfPlayer);
+
+void printNumLabel(int numOfPlayer);
 void printCard(card c);
 void printPlayerHand(player *p);
 
 int isValidCard(played_pile* pile, card candidate);
-int drawCard(card *deck, int deckSize, player p);
 
 // functions for testing the linked lists (probably able to keep them for the final code)
 void addCard(played_pile *pile, char name, char color);
 void printTopCard(played_pile *pile);
 void freePile(played_pile *pile);
+
+// // Handle effect of AND card. This could check the next player’s hand for the correct color AND number (return 1), or apply a penalty if they cannot match (return 0)
+//int handleAND(player *p, player *nextPlayer, card topOfPile, card *gameDeck, int *deckIndex, played_pile *pile);
+
 
 
 // test functions - - - - - - - - - -
@@ -64,137 +69,202 @@ void freePile(played_pile *pile);
     addCard(pile, '5', 'R'); // Red 5
     printTopCard(pile); // Should print "Top of card pile is: Red 5"
    **/
-   
-    /** Print player's hand
-    for (i = 0; i < numPlayers; i++) {
-        printPlayerHand(&players[i]);
-    }
-    **/
 
 // main function - - - - - - - - - -
 int main() {
+    srand(time(0)); // get a random seed based on the current time so we get different results each run
 
-    srand(time(0)); // Use the current time as the seed to ensure the program will get a unique sequence
-
-    int i, j, k, numPlayers, cardChoice;
-    int w = 0;
-    int cardIndex = 0;
-    card gameDeck[MAX_CARDS];
+    int i, j, k, w, numPlayers, cardChoice;
+    int gameIndex = 0;
+    card gameDeck[MAX_CARDS];  // will hold the deck of cards
     
-    initializeDeck(gameDeck, MAX_CARDS);
-    shuffleDeck(gameDeck);
+    initializeDeck(gameDeck, MAX_CARDS);  // create a fresh deck
+    shuffleDeck(gameDeck);  // shuffle the deck
+    char playAgain = 'y';   // initialize with y so we play at least once
+    int firstCard;    // Store player one's first card index
     
-    // Get the number of players
-    printf("Enter number of players: ");
-    scanf("%d", &numPlayers);
-    getchar();   // discard left over characters 
-    
-    if (numPlayers >= MIN_PLAYERS && numPlayers <= MAX_PLAYERS) {
-        printf("\n");
-    }
-    
-    // Array of players to store multiple player information
-    player players[numPlayers];
-    
-    while (numPlayers < MIN_PLAYERS || numPlayers > MAX_PLAYERS) {
-        printf("\n");
-        printf("Invalid! Please enter a number of players between %d and %d\n", MIN_PLAYERS, MAX_PLAYERS);
+    // Keep asking if the user wants to play again until they say 'no'
+    while (playAgain != 'n' && playAgain != 'N'){
+        
+        // Get the number of players
+        printf("Enter number of players: \n");
         scanf("%d", &numPlayers);
-        getchar();   // discard left over characters 
-        printf("\n");
-    }
-    
-    // Get player names 
-    for (i = 0; i < numPlayers; i++) {
-        printf("Enter ");
-        printOrdinal(i + 1); // Print (first, second...)
-        printf(" player’s name: \n");
-        fgets(players[i].playerName, sizeof(players[i].playerName), stdin);
-
-        // Trim newline from player name: use strcspn to replace newline charcter with null terminator 
-        players[i].playerName[strcspn(players[i].playerName, "\n")] = '\0';
+        getchar();   // gotta clear that newline character so the next input stops getting skipped
         
-        // Dynamically allocate memory for player's hand
-        players[i].deck = malloc(START_DECKSIZE * sizeof(card));
-	    if (players[i].deck == NULL) {
-	        printf("Failed to allocate memory");
-		    return -1;  // Exit if memory could not be allocated
-	    }
-		    
-        players[i].decksize = START_DECKSIZE;  // Set initial hand size of 7 
-        
-        for (j = 0; j < START_DECKSIZE; j++) {
-            players[i].deck[j] = gameDeck[cardIndex++];  // Assign card from shuffled deck, cardIndex is used to move through the cards.
-        }
-    
-    }
-    
-    // creates the pile for players to put cards on
-    played_pile *pile = createPile();
-    
-    // loop for gameplay - eventually need to make this encompass the whole thing 
-    // since i think that every game you'd have to reenter # of players/names/reshuffle deck?
-    while (w == 0) {
-        for (j = 0; j < numPlayers; j++) {
-            // prints out each player's hand and the top card of the pile each round
-            for (k = 0; k < numPlayers; k++) {
-                printPlayerHand(&players[k]);
-            }
-            printTopCard(pile);
-            
+        if (numPlayers >= MIN_PLAYERS && numPlayers <= MAX_PLAYERS){
             printf("\n");
-            printf("%s, enter which card to play from 0 to %d: ", players[j].playerName, players[j].decksize);
-            scanf("%d", &cardChoice);
+        }
+        
+        // An array to hold each player's info
+        player players[MAX_PLAYERS];
+        
+        // Number of players needs to be between 0 and 14
+        while (numPlayers < MIN_PLAYERS || numPlayers > MAX_PLAYERS) {
+            printf("\n");
+            printf("Invalid! Please enter a number of players between %d and %d\n", MIN_PLAYERS, MAX_PLAYERS);
+            scanf("%d", &numPlayers);
+            getchar();  // Make sure the next input isn't skipped
+            printf("\n");
+        }
+        
+        // get each players name and deal them 7 cards
+        for (i = 0; i < numPlayers; i++) {
+            printf("Enter ");
+            printNumLabel(i + 1); // Print "first, second, etc" for each player
+            printf(" player’s name: \n");
+            fgets(players[i].playerName, sizeof(players[i].playerName), stdin);
+    
+            // cuts off extra space at the end of the player name
+            players[i].playerName[strcspn(players[i].playerName, "\n")] = '\0';
             
-            // runs while the current player doesn't pick a card currently in their hand
-            while (cardChoice > players[j].decksize) {
-                printf("Invalid choice, %s does not have %d cards.\n", players[j].playerName, cardChoice);
-                printf("%s, enter which card to play from 0 to %d: \n", players[j].playerName, players[j].decksize);
-                scanf("%d", &cardChoice);
+            // Dynamically allocate memory for player's hand
+            players[i].deck = (card *)malloc(sizeof(card) * START_DECKSIZE);
+
+    	    if (players[i].deck == NULL) {
+    	        printf("Failed to allocate memory");
+    		    return -1;  // Exit if memory could not be allocated
+    	    }
+    		    
+            players[i].decksize = START_DECKSIZE;  // Start with a hand of 7 cards
+            
+            // Assign 7 cards to each player
+            for (int j = 0; j < START_DECKSIZE; j++) {
+                players[i].deck[j] = gameDeck[gameIndex++];  // keeps track of where we are in the main deck
             }
-            
-            // FIXME: looped branch to check if all of player's cards are valid; if not, forces them to draw and skips entry
-            
-            // FIXME: here would go the main thing - playing the card, discarding it from the player's hand, moves it to the top of the pile, etc.
-            card playedCard = players[j].deck[cardChoice];
-            
-            // branch if the current player has 0 cards - winner!
-            if (players[j].decksize == 0) {
-                printf("%s wins!\n", players[j].playerName);
-                w = 1;
-                break; 
-            }
-            
-            // FIXME: branch where it checks if the pile players draw from is empty, and then if so, who has the least cards
-            if (deckSize == 0) {
-                char winner[20];
-                for (k = 0; k < numPlayers; k++) {
-                    if (players[k].decksize > players[k + 1].decksize) {
-                        strcpy(winner, players[k].playerName);
+        
+        }
+        
+        // Print everyones starting hand
+        for (i = 0; i < numPlayers; i++) {
+            printPlayerHand(&players[i]);
+        }
+        
+        printf("\nCard pile is empty\n");
+        
+        // creates the pile for players to put cards on
+        played_pile *pile = createPile();
+
+        while (w == 0) {
+            for (j = 0; j < numPlayers; j++) {
+                
+                int firstCardCheck = 0;   // will check if player one has played their first card
+        
+                // get the first player to put down a valid card
+                while (firstCardCheck == 0) {
+                    printf("%s, enter which card to play from 0 to 6: \n", players[0].playerName);
+                    scanf("%d", &firstCard);
+                    getchar();
+                    
+                    if (firstCard < 0 || firstCard >= players[0].decksize){
+                        printf("Invalid choice, %s does not have %d cards\n", players[0].playerName, firstCard + 1);
                     }
+                    else if (players[0].deck[firstCard].name =='A' || players[0].deck[firstCard].name =='O' || players[0].deck[firstCard].name =='N' || players[0].deck[firstCard].name =='R') {
+                       printf("Invalid choice, first pile card cannot be a special card\n");
+                    }
+                    else {
+                        j++;
+                        firstCardCheck = 1;  // card looks good
+                    }
+            
                 }
                 
-                printf("%s wins!\n", winner);
-                w = 1;
-                break;
-            }
-            
-        }
+                // put the first card on the pile
+                card played = players[0].deck[firstCard];
+                addCard(pile, played.name, played.color);
         
-        // if it's at the last player and there's no winner, resets the counter 
-        if (j == (numPlayers - 1)) {
+                //Remove the card from the player's hand
+                for (i = firstCard; i < players[0].decksize - 1; i++) {
+                    players[0].deck[i] = players[0].deck[i + 1];
+                }
+                players[0].decksize--;  // can't forget to update the player's deck size
+                
+                // prints out each player's hand and the top card of the pile each round
+                for (k = 0; k < numPlayers; k++) {
+                    printPlayerHand(&players[k]);
+                }
+                printTopCard(pile);
+                
+                printf("\n");
+                printf("%s, enter which card to play from 0 to %d: ", players[j].playerName, players[j].decksize);
+                scanf("%d", &cardChoice);
+                
+                // runs while the current player doesn't pick a card currently in their hand
+                while (cardChoice > players[j].decksize) {
+                    printf("Invalid choice, %s does not have %d cards.\n", players[j].playerName, cardChoice);
+                    printf("%s, enter which card to play from 0 to %d: \n", players[j].playerName, players[j].decksize);
+                    scanf("%d", &cardChoice);
+                }
+                
+                // FIXME: looped branch to check if all of player's cards are valid; if not, forces them to draw and skips entry
+                
+                // FIXME: here would go the main thing - playing the card, discarding it from the player's hand, moves it to the top of the pile, etc.
+                card playedCard = players[j].deck[cardChoice];
+                addCard(pile, playedCard.name, playedCard.color);
+                
+                //Remove the card from the player's hand
+                for (k = cardChoice; k < players[j].decksize - 1; k++) {
+                    players[j].deck[k] = players[j].deck[k + 1];
+                }
+                players[j].decksize--;  // can't forget to update the player's deck size
+                
+                // branch if the current player has 0 cards - winner!
+                if (players[j].decksize < 0) {
+                    printf("%s wins!\n", players[j].playerName);
+                    w = 1;
+                    break; 
+                }
+                
+                /** // FIXME: branch where it checks if the pile players draw from is empty, and then if so, who has the least cards
+                if (deckSize == 0) {
+                    char winner[20];
+                    for (k = 0; k < numPlayers; k++) {
+                        if (players[k].decksize > players[k + 1].decksize) {
+                            strcpy(winner, players[k].playerName);
+                        }
+                    }
+                    
+                    printf("%s wins!\n", winner);
+                    w = 1;
+                    break;
+                } **/
+                
+            }
+        
+            // if it's at the last player and there's no winner, resets the counter 
+            if (j == (numPlayers - 1)) {
                 j = 0;
+            }
         }
-    }
     
-    // frees the memory of the pile
-    freePile(pile);
-    
-    // Free the allocated memory for each player
-    for (i = 0; i < numPlayers; i++) {
-        free(players[i].deck);
+        // !! - - - placeholder: where the main game (loop?) should probably go - - - !!
+        /*while (){
+            mmmm
+        
+        
+        // adds and prints the card at the top of the pile
+        addCard(pile, '5', 'R'); // Red 5
+        printTopCard(pile); // should print "Top of card pile is: Red 5"
+        
+        }*/
+        
+        // frees the memory of the pile
+        freePile(pile);
+        
+        // Free the allocated memory for each player
+        for (int i = 0; i < numPlayers; i++) {
+            free(players[i].deck);
+        }  
+        
+        // Print game over message
+        // - printf("\nPlayer Two wins!\n") -- want to print the player name that wins
+        printf("\nPlay again? (y/n)?: \n");
+        scanf(" %c", &playAgain);
+        getchar(); // don't want the next input to be skipped
+        printf("\n");
     }
 
+    printf("Goodbye\n");
+    
     return 0;
 }
 
@@ -225,15 +295,17 @@ void CreateDeck(card *deck, int deckSize) {
     }
 }
 
-// Shuffle a deck of 100 cards
+// Shuffle a deck of 100 cards by swapping the position of two cards
 void shuffleDeck(card *deck) {
 
+    // repeat swap 10000 times for proper shuffling 
     for (int i = 0; i < MAX_SHUFFLE; i++) {
-        int first = rand() % MAX_CARDS;  // Generate a random number 0-99
+        
+        // get two random number 0-99 for the index's
+        int first = rand() % MAX_CARDS;  
         int second = rand() % MAX_CARDS;
-
-        // swap the indexes
-        card temp = deck[first];  // temp is of type card to hold the entire card being swapped
+        
+        card temp = deck[first];
         deck[first] = deck[second];
         deck[second] = temp;
     }
@@ -312,19 +384,20 @@ void printCard(card c) {
 // Print the hand of a given player (their name + the cards).
 void printPlayerHand(player *p) {
     int i;
-    
+
     printf("\n");
     printf("%s's hand: \n", p->playerName);
     printf("\n");
 
+    //
     for (i = 0; i < p->decksize; i++) {
-        printCard(p->deck[i]);
-        printf("\n"); // New line after each card 
+        printCard(p->deck[i]);  // print each card in a player's hand
+        printf("\n");
     }
 }
     
-// Print the ordinal word for players (first, second...)
-void printOrdinal(int numOfPlayer) {
+// Converts number like 1 to first
+void printNumLabel(int numOfPlayer) {
     if (numOfPlayer == 1) {
         printf("first");
     } else if (numOfPlayer == 2) {
@@ -356,34 +429,10 @@ void printOrdinal(int numOfPlayer) {
     }
 }
 
-// Draw a single card from the deck and place it in a player's hand. Return 1 if the draw was successful, 0 if deck is empty.
-// draws from the END of the deck and then reduces the deck size to keep things simpler
-int drawCard(card *deck, int *deckSize, player *p) {
-    int success = 1;
-    int empty = 0;
-    
-    if (*deckSize == 0) {
-        return empty;
-    }
-    
-    card draw = deck[*deckSize - 1];
-    
-    p->deck = realloc(p->deck, (p->decksize + 1) * sizeof(card));
-    if (p->deck == NULL) {
-        return empty;
-    }
-    
-    p->deck[p->decksize] = drawn;
-    p->decksize++;
-    (*decksize)--;
-    
-    return success;
-}
-
 // Check if a candidate card is valid to play on the top-of-pile card. Return 1 if valid, 0 otherwise.
 // note: changed the parameters from what's on the sheet, this is said to be allowed as long as the function name itself is the same so we should be okay
-// FIXME/extra note: need to make it so we can actually input which card to add to test it i think. oopsies
-int isValidCard(played_pile *pile, card candidate) {
+// extra note: need to make it so we can actually input which card to add to test it i think. oopsies
+int isValidCard(played_pile* pile, card candidate) {
     card pileTopCard;
     int valid = 1;
     int not_valid = 0;
@@ -443,7 +492,6 @@ void printTopCard(played_pile *pile) {
     card newCard;
     
     if (pile->top == NULL) {
-        printf("\n");
         printf("Card pile is empty.\n");
         return;
     }
@@ -467,3 +515,53 @@ void freePile(played_pile *pile) {
     }
     free(pile);
 }
+
+// Handle effect of AND card. This could check the next player’s hand for the correct color AND number (return 1), or apply draw 4 penalty if they cannot match (return 0)
+/*int handleAND(player *p, player *nextPlayer, card topOfPile, card *gameDeck, int *deckIndex, played_pile *pile){
+    
+    // check the player's hand for a matching card 
+    for (int i = 0; i < nextPlayer->decksize; i++) {
+	   if (nextPlayer->deck[i].color == topOfPile.color && nextPlayer->deck[i].name == topOfPile.name) {
+	            
+        printf("Card Matches, no AND penalty\n");
+
+        // hold on to the card that will be added to pile
+        card pileCard = nextPlayer->deck[i];
+
+        // take out the card from the players hand & move the rest over to fill open space
+        for (int j = i; j < nextPlayer->decksize - 1; j++) {
+            nextPlayer->deck[j] = nextPlayer->deck[j + 1];
+        }
+        nextPlayer->decksize--; // Decrease deck size since player has one less card
+
+        // Add the card to the played pile
+        addCard(pile, pileCard.name, pileCard.color);
+
+        return 1;  // match found
+        }
+    }
+	
+    // No match: player draws 4
+    printf("%s has no card that matches %s and %d\n", nextPlayer->playerName, topOfPile.color, topOfPile.name);
+    printf("\n");
+    printf("AND penalty, Draw 4\n");
+
+    // add 4 cards from deck to player's hand
+    for (int i = 0; i < DRAW_PENALTY; i++) {
+        if (*deckIndex < MAX_CARDS) {
+        
+            // See if we need a bigger hand size for the player
+            card *newDeck = (card *)realloc(nextPlayer->deck, (nextPlayer->decksize + 1) * sizeof(card));
+            if (newDeck == NULL) {
+                printf("Failed to allocate memory while drawing cards.\n");
+                return -1;
+            }
+            nextPlayer->deck = newDeck;
+            nextPlayer->deck[nextPlayer->decksize] = gameDeck[*deckIndex]; // grab a card from the main deck and add it to player's hand
+            nextPlayer->decksize++; // player has one more card now
+            (*deckIndex)++; // Move to the next card in the main deck
+        }
+    }
+	
+	    return 0;  // Return 0 if no match is found, and the player has drawn 4 cards
+}*/
