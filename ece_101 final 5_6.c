@@ -214,6 +214,7 @@ int main() {
             // if the user has no cards that match, forces them to draw and skips entry
             if (ValidCount == 0) {
                 if ( drawCard(gameDeck, gameDeckSizePtr, &players[currentPlayer]) == 1 ) {
+                    printf("\n");
                     printf("%s has no card that matches %c or %c, draw one and skip turn.\n", players[currentPlayer].playerName, pile->top->color, pile->top->name);
                     currentPlayer = (currentPlayer + turnOrder + numPlayers) % numPlayers;;
                     continue;
@@ -757,6 +758,7 @@ int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *de
         printf("Enter card choice from 0 to %d: ", currentPlayer->decksize - 1);
         scanf("%d", &cardIndex);
         getchar();
+        printf("\n");
         
         if (cardIndex < 0 || cardIndex >= currentPlayer->decksize) {
             printf("Invalid selection!\n");
@@ -818,6 +820,7 @@ int handleOR(player *currentPlayer, player *nextPlayer, card *gameDeck, int *dec
         printf("Enter card choice from 0 to %d: ", currentPlayer->decksize - 1);
         scanf("%d", &cardIndex);
         getchar();
+        printf("\n");
         
         if (cardIndex < 0 || cardIndex >= currentPlayer->decksize) {
             printf("Invalid selection!\n");
@@ -897,7 +900,7 @@ int handleNOT(int currentPlayerIndex, int playerCount, int* playerOrder) {
     if (playerCount == 2) {
         return (currentPlayerIndex + playerCount - 1) % playerCount;
     }
-    printf("Next Player's turn skipped.\n");
+    printf("Next player's turn skipped.\n");
     
      // If the order is reversed subtract 2 to skip in reverse order
     if (*playerOrder == REVERSE_ORDER) {
