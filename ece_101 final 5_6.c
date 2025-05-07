@@ -260,7 +260,7 @@ int main() {
             if (playedCard.color == 'S') {
                 if (playedCard.name == 'A') {
                     int andValid = 2;
-                    nextPlayer = (currentPlayer + 1) % numPlayers;
+                    nextPlayer = (currentPlayer + 2) % numPlayers;
                     
                     for (k = cardChoice; k < players[currentPlayer].decksize - 1; k++) {
                         players[currentPlayer].deck[k] = players[currentPlayer].deck[k + 1];
@@ -268,7 +268,7 @@ int main() {
                     players[currentPlayer].decksize--;  // can't forget to update the player's deck size
                     
                     andValid = handleAND(&players[currentPlayer], &players[nextPlayer], gameDeck, gameDeckSizePtr, pile);
-                    currentPlayer++;
+                    currentPlayer = (currentPlayer + 2) % numPlayers;
                         
                     if (andValid == 0) {
                         printf("Penalty applied.\n");
@@ -288,7 +288,7 @@ int main() {
                     players[currentPlayer].decksize--;  // can't forget to update the player's deck size
                     
                     orValid = handleOR(&players[currentPlayer], &players[nextPlayer], gameDeck, gameDeckSizePtr, pile);
-                    currentPlayer++;
+                    currentPlayer = (currentPlayer + 2) % numPlayers;
                         
                     if (orValid == 0) {
                         printf("Penalty applied.\n");
@@ -325,7 +325,7 @@ int main() {
                 printf("\n");
                 printf("Invalid choice, cannot play ");
                 printCard(playedCard);
-                printf(" on ");https://www.onlinegdb.com/edit/XcYxz2Zy3#tab-stdin
+                printf(" on ");
                 printCard(topCard); 
                 printf("\n");
                     
@@ -717,6 +717,7 @@ int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *de
             nextPlayer->deck[k] = nextPlayer->deck[k + 1];
         }
         nextPlayer->decksize--; // can't forget to update the player's deck size
+        
         return 1;
         
     } else {
@@ -758,19 +759,18 @@ int handleOR(player *currentPlayer, player *nextPlayer, card *gameDeck, int *dec
     
     // Check next player's hand for a match
     int matchFound = 0;
-    int foundCard = 0;
+    int foundCard = -1;
     
     for (int i = 0; i < nextPlayer->decksize; i++) {
-        if (nextPlayer->deck[i].color == targetColor || 
-            nextPlayer->deck[i].name == targetName) {
+        if (nextPlayer->deck[i].color == targetColor || nextPlayer->deck[i].name == targetName) {
             matchFound = 1;
-            int foundCard = i;
+            foundCard = i;
             
             break;
         }
     }
     
-    if (matchFound) {
+    if (matchFound && foundCard != -1) {
         printf("Card matches, no OR penalty.\n");
         
         int k = 0;
