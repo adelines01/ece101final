@@ -9,6 +9,8 @@
 #define MIN_PLAYERS 2
 #define MAX_SHUFFLE 10000
 #define DRAW_PENALTY 4
+#define NORMAL_ORDER 1
+#define REVERSE_ORDER 0
 
 typedef struct card_t {
     char name; // ’0’-‘9’ for number cards, ‘A’ for AND, ‘O’ for OR, ‘N’ for NOT, and ‘R’ for Reverse.
@@ -49,6 +51,7 @@ void freePile(played_pile *pile);
 int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *deckSize, played_pile *pile);
 int handleOR(player *currentPlayer, player *nextPlayer, card *gameDeck, int *deckSize, played_pile *pile);
 int handleNOT(int currentPlayerIndex, int playerCount);
+void handleReverse(int *reverseFlag, int *currentPlayerIndex, int playerCount);
 int applyPenalty(player *p, card *deck, int *deckSize, int count);
 
 // test functions - - - - - - - - - -
@@ -75,6 +78,7 @@ int main() {
     srand(time(0)); // get a random seed based on the current time so we get different results each run
 
     int i, j, k, numPlayers, cardChoice, newCardChoice;
+    int *jPtr = &j;
     int ValidCount = 0;
     char playAgain = 'y';   // initialize with y so we play at least once
     
@@ -83,6 +87,8 @@ int main() {
         int gameIndex = 0;
         int gameDeckSize = 100;
         int *gameDeckSizePtr = &gameDeckSize;
+        int turnOrder = 0;
+        int *turnOrderPtr = &turnOrder;
         card gameDeck[100];  // will hold the deck of cards
         initializeDeck(gameDeck, 100);  // create a fresh deck
         shuffleDeck(gameDeck);  // shuffle the deck
@@ -177,6 +183,7 @@ int main() {
         
         int w = 0;
         while (w == 0) {
+            
             for (j = 0; j < numPlayers; j++) {
                 
                 if (firstCardCheck == 1) {
@@ -246,7 +253,6 @@ int main() {
                     if (playedCard.name == 'A') {
                         int andValid = 2;
                         
-                        // FIXME: trying to remove AND from players hand when they play it
                         for (k = cardChoice; k < players[j].decksize - 1; k++) {
                             players[j].deck[k] = players[j].deck[k + 1];
                         }
@@ -260,9 +266,11 @@ int main() {
                         }
                         
                         if (andValid == 0) {
+                            j++;
                             printf("Penalty applied.\n");
                         }
                         else {
+                            j++;
                             printf("No penalty applied!\n");
                         }
                     }
@@ -283,14 +291,15 @@ int main() {
                         }
                         
                         if (orValid == 0) {
+                            j++;
                             printf("Penalty applied.\n");
                         }
                         else {
+                            j++;
                             printf("No penalty applied!\n");
                         }
                     }
                     
-                    // FIXME: doesn't put NOT on discard pile, goes to next player
                     if (playedCard.name == 'N') {
                         
                         for (k = cardChoice; k < players[j].decksize - 1; k++) {
@@ -299,15 +308,17 @@ int main() {
                         players[j].decksize--;  // can't forget to update the player's deck size
                         
                         j = handleNOT(j, numPlayers);
-                        
-                        continue;
                     }
                     
+                    // FIXME: results in memory error
                     if (playedCard.name == 'R') {
                         for (k = cardChoice; k < players[j].decksize - 1; k++) {
                             players[j].deck[k] = players[j].deck[k + 1];
                         }
                         players[j].decksize--;  // can't forget to update the player's deck size
+                        
+                        handleReverse(turnOrderPtr, jPtr, numPlayers);
+                        
                     }
                     
                     continue;
@@ -348,10 +359,10 @@ int main() {
                     break; 
                 }
                 
-                /** // FIXME: branch where it checks if the pile players draw from is empty, and then if so, who has the least cards
-                if (deckSize == 0) {
+                // FIXME: branch where it checks if the pile players draw from is empty, and then if so, who has the least cards
+                if (gameDeckSizePtr == 0) {
                     char winner[20];
-                    for (k = 0; k < numPlayers; k++) {
+                    for (k = 0; k < (numPlayers - 1); k++) {
                         if (players[k].decksize > players[k + 1].decksize) {
                             strcpy(winner, players[k].playerName);
                         }
@@ -360,7 +371,7 @@ int main() {
                     printf("%s wins!\n", winner);
                     w = 1;
                     break;
-                } **/
+                } 
                 
             }
             
@@ -809,4 +820,40 @@ int handleNOT(int currentPlayerIndex, int playerCount) {
     printf("Next Player's turn skipped.\n");
     currentPlayerIndex = (currentPlayerIndex + 1) % playerCount;
     return currentPlayerIndex;
+}
+
+// Handle effect of Reverse card (reverse the turn order or in a two-player game, let current player go again
+void handleReverse(int *reverseFlag, int *currentPlayerIndex, int playerCount) {
+
+    if (*reverseFlag == NORMAL_ORDER ) {
+        *reverseFlag = REVERSE_ORDER;  // reverse playing order 
+    }
+    else if (*reverseFlag == REVERSE_ORDER) {
+        *reverseFlag = NORMAL_ORDER;  // switch to normal playing order
+    }
+    
+    // game with 2 players, no index change needed
+    if (playerCount == 2) {
+        return;
+    }
+    
+    // now move to the next player in the new playing order
+    // 2 1 0 0 1 2 or 2 1 0 2 2 0 1
+    if (*reverseFlag == NORMAL_ORDER ) {
+        if (*currentPlayerIndex == (playerCount - 1)){  // come back to first player
+            *currentPlayerIndex = 0;  
+        }
+        else {
+            *currentPlayerIndex = *currentPlayerIndex + 1;
+        }
+    }
+    // 0 1 2 0 0 2 1
+    else if (*reverseFlag == REVERSE_ORDER) {
+        if (*currentPlayerIndex == 0){
+            *currentPlayerIndex = playerCount - 1; // go to last player
+        }
+        else {
+            *currentPlayerIndex = *currentPlayerIndex - 1;
+        }
+    }
 }
