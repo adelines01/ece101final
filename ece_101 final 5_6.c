@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 
+#define MAX_DECK 100
 #define START_DECKSIZE 7 
 #define MAX_PLAYERS 8 
 #define MIN_PLAYERS 2
@@ -45,10 +46,8 @@ void addCard(played_pile *pile, char name, char color);
 void printTopCard(played_pile *pile);
 void freePile(played_pile *pile);
 
-// // Handle effect of AND card. This could check the next player’s hand for the correct color AND number (return 1), or apply a penalty if they cannot match (return 0)
-//int handleAND(player *p, player *nextPlayer, card topOfPile, card *gameDeck, int *deckIndex, played_pile *pile);
-
-
+int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *deckSize, played_pile *pile);
+int applyPenalty(player *p, card *deck, int *deckSize, int count);
 
 // test functions - - - - - - - - - -
 
@@ -226,7 +225,7 @@ int main() {
                 while (cardChoice > players[j].decksize) {
                     printf("\n");
                     printf("Invalid choice, %s does not have %d cards.\n", players[j].playerName, cardChoice);
-                    printf("%s, enter which card to play from 0 to %d: ", players[j].playerName, players[j].decksize);
+                    printf("%s, enter which card to play from 0 to %d: ", players[j].playerName, (players[j].decksize - 1));
                     scanf("%d", &cardChoice);
                     getchar();
                     printf("\n");
@@ -235,12 +234,34 @@ int main() {
                 // main loop
                 card playedCard = players[j].deck[cardChoice];
                 
+                card topCard;
+                    
+                topCard.name = pile->top->name;
+                topCard.color = pile->top->color;
+                
+                // runs if a special card is played
+                if (playedCard.color == 'S') {
+                    if (playedCard.name == 'A') {
+                        int andValid = 2;
+                        
+                        if (j >= numPlayers) {
+                            andValid = handleAND(&players[j], &players[0], gameDeck, gameDeckSizePtr, pile);
+                        }
+                        else {
+                            andValid = handleAND(&players[j], &players[j + 1], gameDeck, gameDeckSizePtr, pile);
+                        }
+                        if (andValid == 0) {
+                            printf("Penalty applied.\n");
+                        }
+                        else {
+                            printf("\n");
+                            printf("matching card omg\n");
+                            printf("\n");
+                        }
+                    }
+                }
+                
                 while ( isValidCard(pile, playedCard) == 0 ) {
-                    card topCard;
-                    
-                    topCard.name = pile->top->name;
-                    topCard.color = pile->top->color;
-                    
                     printf("\n");
                     printf("Invalid choice, cannot play ");
                     printCard(playedCard);
@@ -587,52 +608,73 @@ void freePile(played_pile *pile) {
     free(pile);
 }
 
-// Handle effect of AND card. This could check the next player’s hand for the correct color AND number (return 1), or apply draw 4 penalty if they cannot match (return 0)
-/*int handleAND(player *p, player *nextPlayer, card topOfPile, card *gameDeck, int *deckIndex, played_pile *pile){
+// Handle effect of AND card. This could check the next player’s hand for the correct color AND number (return 1), 
+// or apply a penalty if they cannot match (return 0)
+int handleAND(player *currentPlayer, player *nextPlayer, card *gameDeck, int *deckSize, played_pile *pile) {
     
-    // check the player's hand for a matching card 
+    // Let current player select a card from their hand
+    printf("%s, choose a card to play for AND:\n", currentPlayer->playerName);
+    printPlayerHand(currentPlayer);
+    
+    int cardIndex = -1;
+    int i = 1;
+    while (i = 1) {
+        printf("Enter card choice from 0 to %d: ", currentPlayer->decksize - 1);
+        scanf("%d", &cardIndex);
+        if (cardIndex >= 0 && cardIndex < currentPlayer->decksize) {
+            i = 0;
+            break;
+        }
+        else {
+            printf("Invalid selection!\n");
+        }
+    }
+    
+    // Get selected card's properties
+    char targetColor = currentPlayer->deck[cardIndex].color;
+    char targetName = currentPlayer->deck[cardIndex].name;
+    
+    // Check next player's hand for a match
+    int matchFound = 0;
     for (int i = 0; i < nextPlayer->decksize; i++) {
-	   if (nextPlayer->deck[i].color == topOfPile.color && nextPlayer->deck[i].name == topOfPile.name) {
-	            
-        printf("Card Matches, no AND penalty\n");
-
-        // hold on to the card that will be added to pile
-        card pileCard = nextPlayer->deck[i];
-
-        // take out the card from the players hand & move the rest over to fill open space
-        for (int j = i; j < nextPlayer->decksize - 1; j++) {
-            nextPlayer->deck[j] = nextPlayer->deck[j + 1];
-        }
-        nextPlayer->decksize--; // Decrease deck size since player has one less card
-
-        // Add the card to the played pile
-        addCard(pile, pileCard.name, pileCard.color);
-
-        return 1;  // match found
+        if (nextPlayer->deck[i].color == targetColor && 
+            nextPlayer->deck[i].name == targetName) {
+            matchFound = 1;
+            break;
         }
     }
-	
-    // No match: player draws 4
-    printf("%s has no card that matches %s and %d\n", nextPlayer->playerName, topOfPile.color, topOfPile.name);
-    printf("\n");
-    printf("AND penalty, Draw 4\n");
-
-    // add 4 cards from deck to player's hand
-    for (int i = 0; i < DRAW_PENALTY; i++) {
-        if (*deckIndex < 100) {
-        
-            // See if we need a bigger hand size for the player
-            card *newDeck = (card *)realloc(nextPlayer->deck, (nextPlayer->decksize + 1) * sizeof(card));
-            if (newDeck == NULL) {
-                printf("Failed to allocate memory while drawing cards.\n");
-                return -1;
-            }
-            nextPlayer->deck = newDeck;
-            nextPlayer->deck[nextPlayer->decksize] = gameDeck[*deckIndex]; // grab a card from the main deck and add it to player's hand
-            nextPlayer->decksize++; // player has one more card now
-            (*deckIndex)++; // Move to the next card in the main deck
-        }
+    
+    if (matchFound) {
+        printf("Card matches, no AND penalty.\n");
+        return 1;
+    } else {
+        printf("%s has no matching card, applying AND penalty.\n", nextPlayer->playerName);
+        applyPenalty(nextPlayer, gameDeck, deckSize, 4); // Draw 4 cards
+        return 0;
     }
-	
-	    return 0;  // Return 0 if no match is found, and the player has drawn 4 cards
-}*/
+}
+
+int applyPenalty(player *p, card *deck, int *deckSize, int count) {
+    if (*deckSize < count) {
+        printf("Not enough cards left in the deck to draw.\n");
+        count = *deckSize;
+    }
+    
+    // Resize player's hand
+    card *temp = realloc(p->deck, (p->decksize + count) * sizeof(card));
+    if (!temp) {
+        printf("Error reallocating memory for the penalty.\n");
+        return 0;
+    }
+    p->deck = temp;
+    
+    // Draw from the end of the deck (top)
+    for (int i = 0; i < count; i++) {
+        p->deck[p->decksize + i] = deck[*deckSize - count + i];
+    }
+    p->decksize += count;
+    *deckSize -= count;
+    
+    printf("%s draws %d cards\n", p->playerName, count);
+    return count;
+}
